@@ -1,14 +1,13 @@
 import { Database } from "bun:sqlite";
 
-const db = new Database("product");
+const db = new Database("product.db");
 
 db.query(
   `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
-    password TEXT
-  )
+    password TEXT)
 `
 ).run();
 
@@ -16,11 +15,12 @@ db.query(
   `
   CREATE TABLE IF NOT EXISTS productItems (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId text
+    userId text,
     productImage TEXT,
-    productName TEXT
+    productName TEXT,
     price TEXT,
-
+    description TEXT,
+    category TEXT
     )`
 ).run();
 
@@ -28,7 +28,7 @@ Bun.serve({
   port: 3000,
   async fetch(req) {
     const url = new URL(req.url);
-    
+
     // ✅ Handle CORS preflight - UPDATED to include PUT
     if (req.method === "OPTIONS") {
       return new Response(null, {
@@ -117,6 +117,55 @@ Bun.serve({
         );
       }
     }
+    if (url.pathname === "/api/assignProduct" && req.method === "POST") {
+  try {
+    const { userId, image, productName, category, price, description } = await req.json();
+     db.query(
+      "INSERT INTO productItems (userId, productImage, productName, price, category, description) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(userId, image, productName, price, category, description)
+
+    return new Response(JSON.stringify({ ok: true}), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ ok: false, error: error.message }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
+  }
+}
+
+if(url.pathname === "/api/showAllProduct" && req.method === "POST"){
+   try {
+    const { userId } = await req.json();
+var product = db.query(`SELECT * FROM productItems WHERE userId = ?`).all([userId]);
+
+    return new Response(JSON.stringify({ ok: true , product}), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ ok: false, error: error.message }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
+  }
+}
     return new Response("Not Found", {
       status: 404,
       headers: {

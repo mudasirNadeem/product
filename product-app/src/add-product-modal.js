@@ -1,9 +1,19 @@
-import { X, Upload } from 'lucide-react';
+import { X, Upload, FileInput } from 'lucide-react';
 import { useState } from 'react';
 
 const AddProductModal = ({ open, onclose }) => {
+  var [image , setImage] = useState('');
+    var [previewUrl, setPreviewUrl] = useState(null);
   if (!open) return null;
-    async function AddProductModal(event){
+  var userId = localStorage.getItem("userId");
+      function handleImage(e){
+        var file = e.target.files[0];
+        if(file){
+          setImage(file)
+          setPreviewUrl(URL.createObjectURL(file));
+        }
+      }
+    async function AddProduct(event){
     event.preventDefault();
     const form = event.target.closest("form");
     const formData = new FormData(form);
@@ -11,19 +21,22 @@ const AddProductModal = ({ open, onclose }) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-    image: formData.get("productImage"),
+        userId : userId,
+    image: previewUrl,
     productName: formData.get("productName"),
     category: formData.get("category"),
     price: formData.get("price"),
+    description: formData.get("description"),
       }),
     });
     const data = await response.json();
     if(data.ok){
-        console.log("Mudasir")
+     console.log(data.product);
     }
 
     }
   return (
+
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       {/* Modal Container */}
       <div className="relative w-full max-w-5xl max-h-[100vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl m-4">
@@ -39,7 +52,7 @@ const AddProductModal = ({ open, onclose }) => {
         </div>
 
         {/* Modal Content */}
-        <form className="p-6 space-y-6" onSubmit={(event) => AddProductModal(event)}>
+        <form className="p-6 space-y-6" onSubmit={(event) => AddProduct(event)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* Image Upload */}
@@ -47,7 +60,8 @@ const AddProductModal = ({ open, onclose }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Product Image
               </label>
-              <input type="file" id="file-upload" name="productImage" hidden />
+<input type="file"   accept=".png, .jpg, .jpeg, .svg"
+ id="file-upload" onChange={(e) => handleImage(e)} name="productImage" hidden />
               <label
                 htmlFor="file-upload"
                 className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 flex items-center justify-center h-80 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
@@ -100,7 +114,6 @@ const AddProductModal = ({ open, onclose }) => {
               </div>
 
               {/* Pricing */}
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Price *
@@ -115,21 +128,6 @@ const AddProductModal = ({ open, onclose }) => {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Original Price
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
-                    <input
-                      type="number"
-                      name="originalPrice"
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
-                    />
-                  </div>
-                </div>
-              </div>
 
               {/* Description */}
               <div>
