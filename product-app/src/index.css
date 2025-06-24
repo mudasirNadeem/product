@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#webpack-dev-server-client-overlay-div{
+    display: none !important;
+}

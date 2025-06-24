@@ -1,0 +1,14 @@
+{
+  "name": "login",
+  "module": "server.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
