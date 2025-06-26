@@ -1,42 +1,78 @@
-import { X, Upload, FileInput } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { useState } from 'react';
 
-const AddProductModal = ({ open, onclose }) => {
-  var [image , setImage] = useState('');
-    var [previewUrl, setPreviewUrl] = useState(null);
+const AddProductModal = ({ open, onclose , addListProduct}) => {
+  var [image, setImage] = useState('');
+  var [previewUrl, setPreviewUrl] = useState(null);
+
   if (!open) return null;
   var userId = localStorage.getItem("userId");
-      function handleImage(e){
-        var file = e.target.files[0];
-        if(file){
-          setImage(file)
-          setPreviewUrl(URL.createObjectURL(file));
-        }
-      }
-    async function AddProduct(event){
+
+  function handleImage(e) {
+    var file = e.target.files[0];
+    if (file) {
+      setImage(file)
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  }
+
+  async function addproduct(event) {
     event.preventDefault();
+    
+    let imageUrl = '';
+    
+    // Upload image first if there's one
+    if (image) {
+      const imageFormData = new FormData();
+      imageFormData.append('image', image);
+      
+      try {
+        const imageResponse = await fetch("http://localhost:3000/api/uploadImage", {
+          method: "POST",
+          body: imageFormData,
+        });
+        
+        const imageData = await imageResponse.json();
+        if (imageData.ok) {
+          imageUrl = imageData.imageUrl;
+        } else {
+          alert('Failed to upload image');
+          return;
+        }
+      } catch (error) {
+        alert('Error uploading image: ' + error.message);
+        return;
+      }
+    }
+    
+    // Now add the product
     const form = event.target.closest("form");
     const formData = new FormData(form);
     const response = await fetch("http://localhost:3000/api/assignProduct", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId : userId,
-    image: previewUrl,
-    productName: formData.get("productName"),
-    category: formData.get("category"),
-    price: formData.get("price"),
-    description: formData.get("description"),
+        userId: userId,
+        image: imageUrl,
+        productName: formData.get("productName"),
+        category: formData.get("category"),
+        price: formData.get("price"),
+        description: formData.get("description"),
       }),
     });
     const data = await response.json();
-    if(data.ok){
-     console.log(data.product);
+    if (data.ok) {
+      console.log('Product added successfully');
+      // Reset form
+      addListProduct();
+      form.reset();
+      setImage('');
+      setPreviewUrl(null);
+      onclose();
     }
+  }
 
-    }
   return (
-
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       {/* Modal Container */}
       <div className="relative w-full max-w-5xl max-h-[100vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl m-4">
@@ -52,7 +88,7 @@ const AddProductModal = ({ open, onclose }) => {
         </div>
 
         {/* Modal Content */}
-        <form className="p-6 space-y-6" onSubmit={(event) => AddProduct(event)}>
+        <form className="p-6 space-y-6" onSubmit={(event) => addproduct(event)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* Image Upload */}
@@ -60,21 +96,34 @@ const AddProductModal = ({ open, onclose }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Product Image
               </label>
-<input type="file"   accept=".png, .jpg, .jpeg, .svg"
- id="file-upload" onChange={(e) => handleImage(e)} name="productImage" hidden />
+              <input type="file" required accept=".png, .jpg, .jpeg, .svg"
+                id="file-upload" onChange={(e) => handleImage(e)} name="productImage" hidden />
               <label
                 htmlFor="file-upload"
                 className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 flex items-center justify-center h-80 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
               >
-                <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Click to upload product image
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    PNG, JPG up to 10MB
-                  </p>
-                </div>
+                {previewUrl ? (
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <div className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1">
+                      <span className="text-white text-xs">Click to change</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      Click to upload product image
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      PNG, JPG up to 10MB
+                    </p>
+                  </div>
+                )}
               </label>
             </div>
 
@@ -101,7 +150,7 @@ const AddProductModal = ({ open, onclose }) => {
                 </label>
                 <select
                   name="category"
-                  defaultValue=""
+                  defaultValue="electronics"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
                 >
                   <option value="">Select category</option>
@@ -114,20 +163,20 @@ const AddProductModal = ({ open, onclose }) => {
               </div>
 
               {/* Pricing */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Price *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
-                    <input
-                      type="number"
-                      name="price"
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Price *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
+                  <input
+                    type="number"
+                    name="price"
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
+                  />
                 </div>
+              </div>
 
               {/* Description */}
               <div>
@@ -135,6 +184,7 @@ const AddProductModal = ({ open, onclose }) => {
                   Description *
                 </label>
                 <textarea
+                required
                   name="description"
                   rows={4}
                   placeholder="Enter product description"

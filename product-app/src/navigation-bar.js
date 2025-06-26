@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, LogOut, User } from 'lucide-react';
 import AddProductModal from './add-product-modal';
 
-export default function Navigation() {
+export default function Navigation({addListProduct}) {
     var [addModal ,  setAddModal] = useState(false);
   return (
     <nav className="bg-white  dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -56,7 +56,7 @@ export default function Navigation() {
           </div>
         </div>
       </div>
-      <AddProductModal open={addModal}  onclose={() => setAddModal(false)}/>
+      <AddProductModal addListProduct={addListProduct} open={addModal}  onclose={() => setAddModal(false)}/>
     </nav>
 
   );
