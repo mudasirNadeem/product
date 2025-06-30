@@ -41,6 +41,20 @@ db.query(
     category TEXT
     )`
 ).run();
+db.query(
+  `
+  CREATE TABLE IF NOT EXISTS cart (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId text,
+  customerId INTIGER,
+    productImage TEXT,
+    productName TEXT,
+    price TEXT,
+    description TEXT,
+    category TEXT,
+  quantity  INTEGER
+    )`
+).run();
 
 Bun.serve({
   port: 3000,
@@ -248,12 +262,38 @@ Bun.serve({
       }
     }
 
-    if (url.pathname === "/api/showAllProduct" && req.method === "POST") {
+    // if (url.pathname === "/api/showAllProduct" && req.method === "POST") {
+    //   try {
+    //     const { userId } = await req.json();
+    //     var product = db
+    //       .query(`SELECT * FROM productItems WHERE userId = ?`)
+    //       .all([userId]);
+
+    //     return new Response(JSON.stringify({ ok: true, product }), {
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Access-Control-Allow-Origin": "*",
+    //       },
+    //     });
+    //   } catch (error) {
+    //     return new Response(
+    //       JSON.stringify({ ok: false, error: error.message }),
+    //       {
+    //         headers: {
+    //           "Content-Type": "application/json",
+    //           "Access-Control-Allow-Origin": "*",
+    //         },
+    //       }
+    //     );
+    //   }
+    // }
+
+    if (url.pathname === "/api/viewProduct" && req.method === "POST") {
       try {
-        const { userId } = await req.json();
+        const { id } = await req.json();
         var product = db
-          .query(`SELECT * FROM productItems WHERE userId = ?`)
-          .all([userId]);
+          .query(`SELECT * FROM productItems WHERE id = ?`)
+          .all([id]);
 
         return new Response(JSON.stringify({ ok: true, product }), {
           headers: {
@@ -274,12 +314,131 @@ Bun.serve({
       }
     }
 
-     if (url.pathname === "/api/viewProduct" && req.method === "POST") {
+    if (url.pathname === "/api/showAllProduct" && req.method === "POST") {
       try {
-        const { id } = await req.json();
+        const { category, userId } = await req.json();
+        var product = [];
+        // if (category == "All" || category == undefined) {
+        
+        if (category == "All") {
+          product = db
+            .query(`SELECT * FROM productItems WHERE userId = ?`)
+            .all([userId]);
+        } else {
+          product = db
+            .query(
+              `SELECT * FROM productItems WHERE category = ? AND userId = ?`
+            )
+            .all([category, userId]);
+        }
+        return new Response(JSON.stringify({ ok: true, product }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ ok: false, error: error.message }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          }
+        );
+      }
+    }
+
+     if (url.pathname === "/api/cartItemsLength" && req.method === "POST") {
+      try {
+        const {userId } = await req.json();
+          let cartProduct = db
+          .query(`SELECT * FROM cart WHERE userId = ?`)
+          .all([userId]);
+        return new Response(JSON.stringify({ ok: true, cartProduct }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ ok: false, error: error.message }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/addToCart" && req.method === "POST") {
+      try {
+        const { userId, id, quantity } = await req.json();
+
+        let cartProduct = db
+          .query(`SELECT * FROM cart WHERE userId = ? AND customerId = ?`)
+          .all([userId, id]);
+        
+
+        if (cartProduct.length > 0) {
+          const currentQuantity = parseInt(cartProduct[0].quantity);
+          db.query(
+            `UPDATE cart SET quantity = ? WHERE userId = ? AND customerId = ?`
+          ).run([currentQuantity + 1, userId, id]);
+        } else {
+          const product = db
+            .query(`SELECT * FROM productItems WHERE userId = ? AND id = ?`)
+            .get([userId, id]);
+
+          if (product) {
+            db.query(
+              `
+  INSERT INTO cart (userId, customerId, productImage, productName, price, description, category, quantity)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+            ).run([
+              userId,
+              id,
+              product.productImage,
+              product.productName,
+              product.price,
+              product.description,
+              product.category,
+              quantity,
+            ]);
+          }
+        }
+
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ ok: false, error: error.message }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+            status: 500,
+          }
+        );
+      }
+    }
+
+     if (url.pathname === "/api/loadCartItems" && req.method === "POST") {
+      try {
+        const { userId } = await req.json();
         var product = db
-          .query(`SELECT * FROM productItems WHERE id = ?`)
-          .all([id]);
+          .query(`SELECT * FROM cart WHERE userId = ?`)
+          .all([userId]);
 
         return new Response(JSON.stringify({ ok: true, product }), {
           headers: {

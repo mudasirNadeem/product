@@ -23,7 +23,7 @@ const ProductView = ({ open, onclose , id }) => {
       }
       setTimeout(() => {
         setLoader(false)
-      }, 2000);
+      }, 500);
     }
   
     useEffect(() => {
